@@ -1,0 +1,220 @@
+\begin{thebibliography}{37}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Afouras et~al.(2018)Afouras, Chung, and Zisserman]{Afouras}
+Triantafyllos Afouras, Joon~Son Chung, and Andrew Zisserman.
+\newblock {Deep Lip Reading : a comparison of models and an online
+  application.}
+\newblock \emph{Interspeech}, 2018.
+
+\bibitem[Assael et~al.(2016)Assael, Shillingford, Whiteson, and
+  Freitas]{Assael2016}
+Yannis~M Assael, Brendan Shillingford, Shimon Whiteson, and Nando~De Freitas.
+\newblock {LipNet: end-to-end sentence-level lipreading}.
+\newblock 2016.
+
+\bibitem[B and Zisserman(2017)]{B2017}
+Joon Son~Chung B and Andrew Zisserman.
+\newblock {Lip Reading in the Wild}.
+\newblock \emph{ACCV}, 2017.
+
+\bibitem[Banerjee and Lavie(2005)]{Banerjee2003}
+Satanjeev Banerjee and Alon Lavie.
+\newblock {METEOR : An Automatic Metric for MT Evaluation with Improved
+  Correlation with Human Judgments}.
+\newblock \emph{ACL}, 2005.
+
+\bibitem[Chen and Steinberger(2014)]{Chen2014}
+Shan Chen and John Steinberger.
+\newblock {Deep Reinforcement Learning for Sequence-to-Sequence Models}.
+\newblock \emph{Lecture Notes in Computer Science (including subseries Lecture
+  Notes in Artificial Intelligence and Lecture Notes in Bioinformatics)}, 2014.
+
+\bibitem[Chen et~al.(2017)Chen, Liao, Chuang, Hsu, Fu, and Sun]{Chen2017}
+Tseng~Hung Chen, Yuan~Hong Liao, Ching~Yao Chuang, Wan~Ting Hsu, Jianlong Fu,
+  and Min Sun.
+\newblock {Show, Adapt and Tell: Adversarial Training of Cross-Domain Image
+  Captioner}.
+\newblock \emph{ICCV}, 2017.
+
+\bibitem[Chopra et~al.(2016)Chopra, Auli, and Zaremba]{Chopra2016}
+Sumit Chopra, Michael Auli, and Wojciech Zaremba.
+\newblock {SEQUENCE LEVEL TRAINING WITH RECURRENT NEURAL NETWORKS}.
+\newblock \emph{ICLR}, 2016.
+
+\bibitem[Chung(2017)]{Chung}
+Joon~Son Chung.
+\newblock {Lip Reading Sentences in the Wild}.
+\newblock \emph{ICCV}, 2017.
+
+\bibitem[Chung and Zisserman(2017)]{Chung2017}
+Joon~Son Chung and Andrew Zisserman.
+\newblock {Lip Reading in Profile}.
+\newblock \emph{BMVC}, 2017.
+
+\bibitem[Chung and Zisserman(2018)]{Chung2018}
+Joon~Son Chung and Andrew Zisserman.
+\newblock {Learning to lip read words by watching videos}.
+\newblock \emph{Computer Vision and Image Understanding}, \penalty0 (February),
+  2018.
+
+\bibitem[Cooke(2006)]{cooke2006}
+Barker J. Cunningham S. Shao~X Cooke, M.
+\newblock {An audio-visual corpus for speech perception and automatic speech
+  recognition.}
+\newblock 2006.
+
+\bibitem[Graves and Fern(2006)]{Graves2006}
+Alex Graves and Santiago Fern.
+\newblock {Connectionist Temporal Classification : Labelling Unsegmented
+  Sequence Data with Recurrent Neural Networks}.
+\newblock \emph{ICMl}, 2006.
+
+\bibitem[Iryna~Anina and Pietik¨ainen(2015)]{Zhao2015}
+Guoying~Zhao Iryna~Anina, Ziheng~Zhou and Matti Pietik¨ainen.
+\newblock {OuluVS2: a multi-view audiovisual database for non-rigid mouth
+  motion analysis}.
+\newblock \emph{IEEE FG}, 2015.
+
+\bibitem[Jianlong~Fu(2014)]{HIWTC2014}
+Tao~Mei Jianlong~Fu, Heliang~Zheng.
+\newblock {Look Closer to See Better: Recurrent Attention Convolutional Neural
+  Network for Fine-grained Image Recognition}.
+\newblock \emph{CVPR}, 2014.
+
+\bibitem[Li and Gong(2018)]{Li2018}
+Lijun Li and Boqing Gong.
+\newblock {End-to-End Video Captioning with Multitask Reinforcement Learning}.
+\newblock \emph{WACV}, 2018.
+
+\bibitem[Lin and Rey(2004)]{Lin2001}
+Chin-yew Lin and Marina Rey.
+\newblock {ROUGE : A Package for Automatic Evaluation of Summaries}.
+\newblock \emph{ACL}, 2004.
+
+\bibitem[McConnell et~al.(2002)McConnell, Berhane, Gilliland, London, Islam,
+  Gauderman, Avol, Margolis, and Peters]{McConnell2002}
+Rob McConnell, Kiros Berhane, Frank Gilliland, Stephanie~J. London, Talat
+  Islam, W.~James Gauderman, Edward Avol, Helene~G. Margolis, and John~M.
+  Peters.
+\newblock {Asthma in exercising children exposed to ozone: A cohort study}.
+\newblock 2002.
+
+\bibitem[Papineni et~al.(2002)Papineni, Roukos, Ward, and Zhu]{Papineni2002}
+Kishore Papineni, Salim Roukos, Todd Ward, and Wei-jing Zhu.
+\newblock {BLEU : a Method for Automatic Evaluation of Machine Translation}.
+\newblock \emph{ACL}, \penalty0 (July), 2002.
+
+\bibitem[Parikh and Uszkoreit(2014)]{IIya}
+Ankur~P Parikh and Jakob Uszkoreit.
+\newblock {Sequence to Sequence Learning with Neural Networks}.
+\newblock \emph{NIPS}, 2014.
+
+\bibitem[Parikh and Uszkoreit(2016)]{Parikh2016}
+Ankur~P Parikh and Jakob Uszkoreit.
+\newblock {A Decomposable Attention Model for Natural Language Inference}.
+\newblock \emph{ACL}, 2016.
+
+\bibitem[Pasunuru and Bansal(2017)]{Pasunuru2017}
+Ramakanth Pasunuru and Mohit Bansal.
+\newblock {Reinforced Video Captioning with Entailment Rewards}.
+\newblock \emph{EMNLP}, 2017.
+
+\bibitem[Petridis et~al.(2018)Petridis, Stafylakis, Ma, and Cai]{Petridis2018}
+Stavros Petridis, Themos Stafylakis, Pingchuan Ma, and Feipeng Cai.
+\newblock {END-TO-END AUDIOVISUAL SPEECH RECOGNITION}.
+\newblock \emph{ICASSP}, 2018.
+
+\bibitem[Ren et~al.(2017)Ren, Wang, and Zhang]{Ren2017}
+Zhou Ren, Xiaoyu Wang, and Ning Zhang.
+\newblock {Deep Reinforcement Learning-based Image Captioning with Embedding
+  Reward}.
+\newblock \emph{CVPR}, 2017.
+
+\bibitem[Rennie et~al.(2017)Rennie, Marcheret, Mroueh, Ross, and Goel]{Rennie}
+Steven~J Rennie, Etienne Marcheret, Youssef Mroueh, Jerret Ross, and Vaibhava
+  Goel.
+\newblock {Self-critical Sequence Training for Image Captioning}.
+\newblock \emph{CVPR}, 2017.
+
+\bibitem[Rohit~Prabhavalkar(2017)]{Rohit}
+Tara N. Sainath Bo Li LeifJohnson Navdeep~Jaitly Rohit~Prabhavalkar,
+  Kanishka~Rao.
+\newblock {A Comparison of Sequence-to-Sequence Models for Speech Recognition}.
+\newblock \emph{Interspeech}, 2017.
+
+\bibitem[Shen et~al.(2019)Shen, Huang, Wang, Tsao, Wang, Chi, Engineering, and
+  Chiao]{Shen}
+Yih-liang Shen, Chao-yuan Huang, Syu-siang Wang, Yu~Tsao, Hsin-min Wang,
+  Tai-shih Chi, Computer Engineering, and National Chiao.
+\newblock {Reinforcement learning based speech enhancement for robust speech
+  recognition}.
+\newblock \emph{ICASSP}, 2019.
+
+\bibitem[Tech et~al.(2015)Tech, Zitnick, and Parikh]{Tech}
+Virginia Tech, C~Lawrence Zitnick, and Devi Parikh.
+\newblock {CIDEr: Consensus-based Image Description Evaluation}.
+\newblock \emph{CVPR}, 2015.
+
+\bibitem[Tjandra et~al.(2018)Tjandra, Sakti, and Nakamura]{Tjandra2017}
+Andros Tjandra, Sakriani Sakti, and Satoshi Nakamura.
+\newblock {Sequence-to-Sequence ASR Optimization via Reinforcement Learning}.
+\newblock \emph{ICASSP}, 2018.
+
+\bibitem[Vaswani(2017)]{Vaswani2017}
+Ashish Vaswani.
+\newblock {Attention Is All You Need}.
+\newblock \emph{NIPS}, 2017.
+
+\bibitem[Venugopalan et~al.(2015)Venugopalan, Rohrbach, Darrell, Donahue,
+  Saenko, and Mooney]{Venugopalan}
+Subhashini Venugopalan, Marcus Rohrbach, Trevor Darrell, Jeff Donahue, Kate
+  Saenko, and Raymond Mooney.
+\newblock {Sequence to Sequence-Video to Text}.
+\newblock \emph{ICCV}, 2015.
+
+\bibitem[Wang et~al.(2018)Wang, Chen, Wu, and Wang]{Wang}
+Xin Wang, Wenhu Chen, Jiawei Wu, and Yuan-fang Wang.
+\newblock {Video Captioning via Hierarchical Reinforcement Learning}.
+\newblock \emph{CVPR}, 2018.
+
+\bibitem[Willia(1992)]{Willia1992}
+Ronald~J. Willia.
+\newblock {Simple Statistical Gradient-Following Algorithms for Connectionist
+  Reinforcement Learning}.
+\newblock \emph{Machine Learning}, 8, 1992.
+
+\bibitem[Wiseman and Rush(2016)]{Wiseman2016}
+Sam Wiseman and Alexander~M Rush.
+\newblock {Sequence-to-Sequence Learning as Beam-Search Optimization}.
+\newblock \emph{EMNLP}, 2016.
+
+\bibitem[Xu et~al.(2015)Xu, Courville, Zemel, and Bengio]{Xu2014}
+Kelvin Xu, Aaron Courville, Richard~S Zemel, and Yoshua Bengio.
+\newblock {Show , Attend and Tell : Neural Image Caption Generation with Visual
+  Attention}.
+\newblock \emph{ICML}, 2015.
+
+\bibitem[Yang et~al.(2018)Yang, Zhang, Feng, Yang, Wang, Xiao, Long, Shan, and
+  Chen]{Yang2019}
+Shuang Yang, Yuanhang Zhang, Dalu Feng, Mingmin Yang, Chenhao Wang, Jingyun
+  Xiao, Keyu Long, Shiguang Shan, and Xilin Chen.
+\newblock {A Naturally-Distributed Large-Scale Benchmarkfor Lip Reading in the
+  Wild}.
+\newblock \emph{IEEE FG}, 2018.
+
+\bibitem[Zhao et~al.(2009)Zhao, Barnard, and Pietik{\"{a}}inen]{Zhao2009}
+Guoying Zhao, Mark Barnard, and Matti Pietik{\"{a}}inen.
+\newblock {Lipreading with local spatiotemporal descriptors}.
+\newblock \emph{IEEE Transactions on Multimedia}, 2009.
+
+\bibitem[Zhou et~al.(2014)Zhou, Zhao, Hong, and Pietik{\"{a}}inen]{Zhou2014}
+Ziheng Zhou, Guoying Zhao, Xiaopeng Hong, and Matti Pietik{\"{a}}inen.
+\newblock { A review of recent advances in visual speech decoding}.
+\newblock \emph{IMAVIS}, \penalty0 (9), 2014.
+
+\end{thebibliography}

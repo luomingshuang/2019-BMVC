@@ -1,0 +1,388 @@
+\documentclass{bmvc2k}
+\usepackage{float}
+\usepackage{setspace}
+\definecolor{ocre}{RGB}{25,25,112}
+\usepackage{caption}
+\usepackage[font={color=ocre},figurename=Figure,labelfont={it}]{caption}
+%\usepackage{titlesec}
+%% Enter your paper number here for the review copyu
+\bmvcreviewcopy{1175}
+\usepackage{multirow}
+\title{Pseudo-Convolutional Policy Gradient for Sequence-to-Sequence Lip-Reading}
+
+% Enter the paper's authors in order
+% \addauthor{Name}{email/homepage}{INSTITUTION_CODE}
+\addauthor{Susan Student}{http://www.vision.inst.ac.uk/~ss}{1}
+\addauthor{Petra Prof}{http://www.vision.inst.ac.uk/~pp}{1}
+\addauthor{Colin Collaborator}{colin@collaborators.com}{2}
+
+% Enter the institutions
+% \addinstitution{Name\\Address}
+\addinstitution{
+	The Vision Institute\\
+	University of Borsetshire\\
+	Wimbleham, UK
+}
+\addinstitution{
+	Collaborators, Inc.\\
+	123 Park Avenue,\\
+	New York, USA
+}
+
+\runninghead{Student, Prof, Collaborator}{BMVC Author Guidelines}
+
+% Any macro definitions you would like to include
+% These are not defined in the style file, because they don't begin
+% with \bmva, so they might conflict with the user's own macros.
+% The \bmvaOneDot macro adds a full stop unless there is one in the
+% text already.
+\def\eg{\emph{e.g}\bmvaOneDot}
+\def\Eg{\emph{E.g}\bmvaOneDot}
+\def\etal{\emph{et al}\bmvaOneDot}
+
+%------------------------------------------------------------------------- 
+% Document starts here
+\begin{document}
+	
+	\maketitle
+	
+	\begin{abstract}
+		Lip-reading has been proved to be a very challenging task due to the large gap between the very limited effective area of lips and the great variety of words we can say. Most existing methods perform this task as a classification task or use the CTC loss for sentence-level lip-reading. But in fact, we think that lip-reading can be seen as a typical sequence-to-sequence (seq2seq) task which translates the input sequence of lip movements to the output sequence of the corresponding speech content. However, the traditional learning process of the seq2seq models could not fit the lip-reading problem very well for two main reasons: the exposure bias resulted by the strategy of "teacher-forcing" and the inconsistency between the optimization target (usually the cross-entropy loss) and the final evaluation metric (usually the word error rate). In this paper, we introduce reinforcement learning (RL) to address the above two problems for seq2seq lip-reading. Specifically, we propose a new method called pseudo-convolutional policy gradient (PCPG) for lip-reading. As far as we know, we are the first to explore the power of reinforcement learning for lip-reading. And we are also the first to introduce the concept of convolution to reinforcement learning, which may provide some insights for the community in related research fields. Finally, extensive ablation study and comparison on both the word-level and sentence-level datasets are given, which show that the proposed PCPG-based seq2seq model not only outperformed the traditional seq2seq models by a large margin, but also achieved the state of the art on the largest word-level lip-reading datasets. Especially, Our results on LRW-1000 achieve a new state-of-the-art on lip-reading task, improving the best result in terms of accuracy from 38.19$\%$ to 38.7$\%$.
+		
+	\end{abstract}
+	%---------------------------------------------------------
+	
+	\section{Introduction}
+	\label{sec:intro}
+	Lip-reading is a new way of human-computer interaction which has received increasing attention in recent years. It is a very attractive skill and aims to understand speech using only visual information\cite{B2017}. It can be used as a strong complement of the automatic audio-based speech recognition systems. Lip-reading can also play an important role in many scenarios, such as transcribing and re-dubbing archival silent films, resolving multi-talker simultaneous speech, liveness verification and so on\cite{Chung}. Lip-reading is a challenging task which involves several types of technologies simultaneously, including technologies about action recognition, temporal modeling, cross-modality learning and so on. With the widespread success of deep learning (DL) and the emergence of large-scale databases such as OuluVS1\cite{Zhao2009}, OuluVS2\cite{Zhao2015}, GRID\cite{cooke2006}, LRW\cite{B2017}, LRW-1000\cite{Yang2019}, LRS\cite{Chung} etc, lip-reading has achieved great progresses these two years. 
+	\begin{figure}[H]
+		\setlength{\abovecaptionskip}{-0.5cm}
+		\setlength{\belowcaptionskip}{-0.2cm} 
+		\centering
+		%\subfigure[the first subfigure]{}
+		\includegraphics[width=5.15in,height=2.40in]{images/frontend1.pdf}
+		\caption{Video encoder.}\label{figure1}
+	\end{figure}
+	\vspace{-0.5cm}
+	\begin{figure}[H]
+		\setlength{\abovecaptionskip}{0.05cm}
+		\setlength{\belowcaptionskip}{-0.3cm} 
+		\centering
+		\includegraphics[width=5.15in,height=2.40in]{images/PCPG2.pdf}
+		\caption{Our sequence-to-sequence lip-reading model architecture. The input is sequence frames and the output is sequence characters. The seq2seq model generates the target character by character. For example, the model generates ("a","b","o","u","t") successively when the ground truth is the word "about". The classifier can work on word-level lip-reading datasets. We utilize Monte Carlo sampling to sample M transcription sequences from our model to calculate the policy gradient.}\label{figure2}
+	\end{figure}
+	
+	
+	In fact, lip-reading is a typical sequence-sequence (seq2seq) task which takes the lip movement sequence as input and output a character sequence. It has a high similarity with other seq2seq tasks such as speech recognition\cite{Rohit}, machine translation\cite{IIya}, image caption\cite{Chen2017}, video caption\cite{Venugopalan}, and so on. Seq2seq models (especially encoder-decoder with attention) have been proved to be effective for these seq2seq tasks. 
+	
+	However, there are still two main drawbacks when we use the seq2seq models directly for lip-reading. 
+	The one is exposure bias\cite{Chopra2016}. Most seq2seq models perform prediction at each time-step with a heavy dependence on the previous ground-truth words in the training process. This approach is called "teacher-forcing"\cite{Rennie} which has been used widely in NLP and other fields. But when coming to the testing process, the prediction at each time-step is generated by feeding the prediction results of the previous time-step as the input, which is totally different with the input in the training stage. This discrepancy leads to exposure bias. The other one is the gap between the optimized target and the final non-differentiable evaluation metrics is also one key problem for most seq2seq models\cite{Chopra2016}. One popular target is the cross-entropy. It has one key problem that it trains the models to be good at greedily predicting the next word at each time-step without considering the whole sequence\cite{Chopra2016}. But the evaluation metrics for seq2seq tasks are often based on the whole output sequence.
+	
+	In this paper, we use seq2seq models for the lip-reading task. Our framework is shown in Figure \ref{figure1} and Figure \ref{figure2}. We set this task at a character-level to adapt different-level lip-reading datasets with one model and avoid the Out-Of-Vocabulary (OOV) problem. To address the exposure bias problem and the mismatch metrics problem, we introduce RL methods (especially the REINFORCE algorithm) to seq2seq lip-reading. Moreover, we propose a novel policy gradient training method called pseudo-convolutional policy gradient (PCPG), which can not only improve the generalization ability of seq2seq model but also solve the inefficiency and the instability existed in the usual REINFORCE algorithm in the training process. We demonstrate the performance of the PCPG in seq2seq lip-reading on three different-level lip-reading datasets (the sentence-level lip-reading dataset: GRID, the two large-scale word-level lip-reading datasets: LRW, LRW-1000) by experiments. 
+	\vspace{-0.3cm}
+	\section{Related work}
+	\vspace{-0.30cm} 
+	{\bf Lip reading}: Lip reading has made a great improvement since the emergence of deep learning (DL). Many methods have been proposed based on DL such as \cite{Chung2018,Chung,Chung2017,B2017,Petridis2018,Assael2016,Afouras,Zhou2014,Yang2019}.     
+	The prior work for character-level lip-reading can be divided into two strands\cite{Afouras}. The one is based on CTC (Connectionist Temporal Classification)\cite{Graves2006}. For example, the work in \cite{Assael2016} presented a model called LipNet which uses a spatio-temporal CNN and Bi-GRU network and CTC to compute the probability of a sequence by marginalizing over all sequences that are defined as equivalent to this sequence\cite{Assael2016}. And the work in \cite{Afouras} used CTC and beam search\cite{Wiseman2016} for lip-reading. The other one is based on seq2seq models (encoder-decoder with attention), such in \cite{Chung}, where the model can combine the audio and visual input streams. The attention mechanism\cite{Xu2014, Vaswani2017,HIWTC2014,Parikh2016}, which is very popular recently, has become a necessary part of seq2seq models. And in \cite{Chung2017}, the author used multi-view datasets for lip-reading. There are some works which belong to word-level recognition are based on a softmax classifier. Such in \cite{Petridis2018}, the end-to-end model got 82$\%$ accuracy of word classification by a softmax classifier for lip-reading. But the model based on classifying can't be used for sentence-level lip-reading tasks. 
+	\vspace{0.2cm}
+	
+	\noindent{\bf Reinforcement learning for seq2seq models}: According to the above, the usual seq2seq optimized methods have two main problems: the exposure bias and the mismatch metrics. The exposure bias leads to error accumulation during the testing process. Most of seq2seq models are trained with the cross entropy while evaluated based on the entire generated sequence with discrete and non-differentiable metrics such as BLEU\cite{Papineni2002}, ROUGE\cite{Lin2001}, METEOR\cite{Banerjee2003}, CIDEr\cite{Tech}, WER (word error rate), CER (character error rate), SER (sentence error rate) etc. These two problems hinder the performance of seq2seq models.
+	
+	In recent years, to address the above two main problems, RL methods are used in more and more seq2seq tasks, such as machine translation, news headline generation, automatic speech recognition (ASR), text summarization, image caption, video caption, and so on\cite{Chen2014}. In RL, the model generates the current target based on the previous predicting characters instead of the previous ground-truth characters in training process. In this way, the model can learn a stronger relationship between characters in output character sequence than using "teacher-forcing". Most of tasks get a much better performance with RL methods, such as  \cite{Tjandra2017,Rennie,Chopra2016,Shen,Wang,Ren2017,Pasunuru2017,Li2018,McConnell2002}. For example, the work in \cite{Tjandra2017} proposed an alternative strategy for training a seq2seq ASR by  RL methods. The other work in \cite{Rennie}, based on an image caption task, proposed an optimization approach that called self-critical sequence training (SCST) and got a much better result than other ways. And specifically in \cite{Chopra2016}, Ranzato et al. used the REINFORCE algorithm\cite{Willia1992} to directly optimize non-differentiable evaluation metrics and overcome the exposure bias in different tasks (summarization, translation, image caption). However, there is no attempt to apply RL to lip-reading. And we still face some problems that how to enhance contextual relevance to get a much better generalization ability of seq2seq model, the instability and the inefficiency in the training process with RL.
+	\vspace{-0.5cm}
+	\section{The Proposed work}
+	\label{sec:Pro}
+	\vspace{-0.3cm}
+	In this section, we introduce our whole work that PCPG (Pseudo-Convolutional Policy Gradient) for seq2seq lip-reading in detail. 
+	This section mainly includes three parts: (1) Model architecture --- a typical seq2seq model which includes a video encoder, a character-decoder with attention and a softmax classifier shown in Figure \ref{figure1}, Figure \ref{figure2} and Section \ref{section3.1}. (2) REINFORCE algorithm--- a kind of policy gradient algorithms shown in Section \ref{section3.2}.(3) Reward function and PCPG(Pseudo-Convolutional Policy Gradient) shown in Section \ref{section3.3}.
+	\vspace{-0.4cm}
+	\subsection{Model architecture} \label{section3.1}
+	\noindent{\bf Video encoder}: As shown in Figure \ref{figure1}, this video encode can extract the spatio-temporal information by other representations from the lip-reading video. So with this video encoder, the input video frame sequence $\mathbf{x}^{v}=\left(x_{1}^{v}, x_{2}^{v}, \dots, x_{k}^{v}\right)$ can be re-represented as the encoder output $\mathbf{o}^{v}=\left(o_{1}^{v}, o_{2}^{v}, \dots, o_{m}^{v}\right)$ and a fixed-dimensional hidden-state vector encoder hidden $h_{e}^{v}$. We can define this process with equation:
+	$$
+	h_{e}^{v}, \mathbf{o}^{v}={Encoder}(\mathbf{x}^{v}). \eqno{(1)}
+	$$
+	
+	\noindent{\bf Character decoder with attention}: We define the ground-truth output character sequence as $\mathbf{c}=[c_{1}, c_{2}, \dots, c_{n}]$, and the generated output character sequence as $\mathbf{y}=\left[y_{1}, y_{2}, \dots, y_{n}\right]$. Here, we use GRU as the decoding unit $Decoder_{j} (j<=n)$ which generates $y_{j}$ at time-step $i$ and receives three inputs: the previous generated output $y_{j-1}$, the previous GRU decoding unit's hidden state $h_{j-1}^{d}$ and the attention $a_{j}$. The character decoder with attention is shown in Figure \ref{figure2}.
+	
+	
+	\vspace{-0.4cm}
+	$$ 
+	\begin{array}
+	%\renewcommand{\arraystretch}{1.0}
+	{c}{{e}_{ji}=attention\left(\boldsymbol{h}_{j-1}^{d}, {o}_{i}^{v}\right) (i<=m)}, \\[2mm] 
+	{{\alpha}_{ji}=\frac{e_{j i}}{\sum_{i} e_{j i}}}  ;\quad {a_{j}=\sum_{i} \alpha_{j i} o_{i}^{v}}, \\[2mm]
+	\boldsymbol{y}_{j}={Decoder_{j}}\left(\boldsymbol{h}_{j-1}^{\text {d}}, \boldsymbol{y}_{j}^{d},{a_{j}}\right). 
+	\end{array}
+	\eqno{(2)}
+	$$
+	
+	In traditional optimization methods, we often train our models by minimizing the cross-entropy(CE) loss. The cross-entropy loss $L_{CE}$ is computed as following: 
+	\vspace{-0.2cm}
+	$$L_{CE}=-\log p\left(c_{1}, c_{2}, \ldots, c_{n}\right)
+	=-\log \prod_{t=1}^{n} p\left(c_{t} | c_{1}, c_{2}, \ldots, 
+	c_{t-1}\right)
+	=-\sum_{t=1}^{n} \log p\left(c_{t} | c_{1}, c_{2}, \ldots, c_{t-1}\right). \eqno{(3)} 
+	$$ 
+	\noindent{\bf Classifier}: As shown in Figure \ref{figure2}, there is a simple fully connected classifying neural network at the end of character decoder, which includes a fully connected layer and a softmax layer. The classifier's loss function $L_{classify}$ can be computed as follows:
+	$$
+	L_{Classify}=-\sum_{k}{P}_{k}log{P}_{k}.\eqno{(4)}
+	$$
+	\subsection{REINFORCE algorithm} \label{section3.2}
+	\noindent{\bf}We introduce REINFORCE algorithms\cite{Willia1992}  to seq2seq lip-reading. In this work, our model can be viewed as an 'agent' that interacts with an external 'environment' (words or sentences and video frames). And the parameters of the model, $\theta$, define a policy $p_{\theta}$, that results in an 'action' (choosing a character). After each time step $j$, the agent will get new internal 'state' (the attention, the previous hidden state and the generated character) and the agent will receive an immediate reward $r_{j}$ and the final reward $R$. So our training goal is to maximize expected reward $E_{y}[R|p_{\theta}]$, and $L_{PG}=-E_{y}[R|p_{\theta}]$ is our loss function. We update the parameters as follows if get a generated pair of transcription ($\mathbf{x}^{v}=\left(x_{1}^{v}, x_{2}^{v}, \dots, x_{k}^{v}\right)$, $\mathbf{y}=\left(y_{1}, y_{2}, \dots, y_{n}\right)$) from the model:
+	\vspace{-0.3cm}
+	$$\nabla_{\theta} E_{\mathbf{y}}\left[R | p_{\theta}\right]=\nabla_{\theta} \int P\left(\mathbf{y} | \mathbf{x}^{v} ; \theta\right) R d \mathbf{y}
+	=E_{\mathbf{y}}\left[\nabla_{\theta} \log P\left(\mathbf{y} | \mathbf{x}^{v} ; \theta\right) R\right].
+	\eqno{(5) } 
+	$$
+	The total reward at current time step $R_{j}$ can be computed with the equation $R_{j}=\sum_{i=j}^{n}\gamma^{i-j}r_{i}$ ($\gamma$ is the discount factor) and the final reward for the whole sequence $R$ can be computed with the equation $R=\sum_{j=1}^{n}R_{j}$. So the gradient can be computed as follows:
+	$$\nabla_{\theta} E_{\mathbf{y}}\left[R | p_{\theta}\right]
+	=\nabla_{\theta} E_{\boldsymbol{y}}\left[\sum_{j=1}^{n} R_{j} | p_{\theta}\right]= E_{\mathbf{y}}\left[\sum_{j=1}^{n} R_{j} \nabla_{\theta} \log P\left(y_{j} | \mathbf{y}<n, \mathbf{x}^{v} ; \theta\right)\right]. \eqno{(6)}
+	$$
+	
+	In the real world, it is impractical to integrate all possible transcription $\mathbf{y}$ to compute the gradient of the expected reward by Eq.6. So we utilize Monte Carlo sampling to sample M transcription sequences $\mathbf{y}^{(m)}$, which is shown in Figure \ref{figure2}. So the gradient can be computed with Eq.7:
+	\vspace{-0.3cm}
+	$$\nabla_{\theta} E_{\mathbf{y}}\left[R | p_{\theta}\right]
+	= E_{\mathbf{y}}\left[\sum_{j=1}^{n} R_{j} \nabla_{\theta} \log P\left(y_{j} | \mathbf{y}<n, \mathbf{x}^{v} ; \theta\right)\right] 
+	\approx\frac{1}{M} \sum_{m=1}^{M} \sum_{j=1}^{n_{m}} R_{j}^{m} \nabla_{\theta} \log P\left(y_{j}^{m} | \mathbf{y}_{<j}^{m}, \mathbf{x}^{v} ; \theta\right).
+	\eqno{(7)}
+	$$
+	So we can get the final gradient:
+	\vspace{-0.3cm}
+	$$ 
+	\frac{\partial L_{PG}(\theta)}{\partial \theta}=-\frac{1}{M} \sum_{m=1}^{M} \sum_{j=1}^{n_{m}} R_{j}^{m} \nabla_{\theta} \log P\left(y_{j}^{m} | \mathbf{y}_{<j}^{m}, \mathbf{x}^{v} ; \theta\right). \eqno{(8)}
+	$$
+	\vspace{-0.9cm}
+	\subsection{Reward function $\&$ PCPG (Pseudo-Convolutional Policy Gradient)} \label{section3.3}
+	\vspace{-0.2cm}
+	\noindent{\bf Reward function}: In lip-reading tasks, the performance of the model is evaluated on CER and WER. And both of them are computed by the edit-distance or Levenshtein distance algorithm. Here, to make it easier to give a reward for each decoding action, we choose the negative CER as the immediate reward at each time step. The reward function is defined as follows:
+	
+	$$ 
+	r_{j}=\left\{\begin{array}{ll}{-\left(E D\left(\mathbf{y}_{1 : j}, \mathbf{c}\right)-E D\left(\mathbf{y}_{1 : j-1}, \mathbf{c}\right)\right)} & {\text { if } j>1} \\ {-\left(E D\left(\mathbf{y}_{1 : j}, \mathbf{c}\right)-\left|\mathbf{c}\right|\right)} & {\text { if } j=1}\end{array}\right.
+	\eqno{(9)}
+	$$
+	$ED(\cdot, \cdot)$ refers to CER, which is computed by edit-distance algorithm, $\mathbf{y}_{1 : j}$ is the sub-string of $\mathbf{y}$ from index 1 to j. and $|\mathbf{c}|$ is the ground-truth length.  
+	\begin{figure}
+		\centering
+		\vspace{-0.04cm}  %调整图片与上文的垂直距离
+		\setlength{\abovecaptionskip}{-0.00cm}   %调整图片标题与图距离
+		\setlength{\belowcaptionskip}{-0.50cm} 
+		\includegraphics[width=4.80in,height=2.10in]{images/PCPG-1.pdf}
+		\caption{Pseudo-convolutional Policy Gradient. In this figure, we set the kernel size $k$ to 5, the stride $s$ to 1, and the kernel weights $w$ to [$\dfrac{1}{5}$,$\dfrac{1}{5}$,$\dfrac{1}{5}$,$\dfrac{1}{5}$,$\dfrac{1}{5}$].} \label{figure3}
+	\end{figure}
+	
+	\vspace{0.2cm}
+	\noindent{\bf PCPG(Pseudo-Convolutional Policy Gradient)}: As we known, the output in character-level lip-reading is a character sequence. How to get a correct and smooth character sequence is not only a recognition task but also an NLP task. The output character at each time step depends not only on the encoding power of the model but also on the context. Inspired by the idea of convolution, especially the temporal convolutional network (TCN), we propose a novel Pseudo-Convolutional Policy Gradient (PCPG) method to optimize the seq2seq model used for lip-reading. In TCN, the convolution kernel increases the receptive field of input at each time step when encoding. So the TCN has a stronger power for encoding sequence information. Similar to TCN, as is shown in Figure \ref{figure3}, in PCPG, the existence of the convolution kernel increase the receptive field of the output character $y_{t}$ at each time step in the decoding process. In PCPG, the convolution kernel has size $k$, stride $s$ and weight $w$ like TCN. Here, we illustrate the PCPG based on the case that $k$=5, $s$=1, w=[$\dfrac{1}{5}$,$\dfrac{1}{5}$,$\dfrac{1}{5}$,$\dfrac{1}{5}$,$\dfrac{1}{5}$]. We also pad input the front and back to keep the original sequence length. These pads are as follows:
+	$L_{-1}=0, L_{0}=0, L_{T+1}=0, L_{T+2}=0.
+	$
+	
+	Here, we use one of M transcription sequences based on Monte Carlo sampling to illustrate the PCPG. According to the REINFORCE algorithm, the loss at each time step $L_{t}$ can be computed with the following equation:
+	$$
+	L_{t}=L_{original}=-R_{t}*logP(y_{t}|\cdot;\theta). \eqno {(10)}
+	$$ 
+	
+	In PCPG, we define $\nabla_{\theta}L_{PCPG}^{t}$ as the local gradient and $\frac{\partial L_{PCPG}}{\partial \theta}$ as the final gradient. And they can be computed as follows:
+	$$
+	L_{t}^{'}=L_{mapping}=L_{t-2:t+2}*w=\dfrac{1}{5}\sum_{i=t-2}^{t+2}L_{i}=
+	\dfrac{1}{5}\left[L_{t-2} + L_{t-1} +L_{t}+L_{t+1}+L_{t+2}\right], \eqno{(11)}
+	$$
+	$$
+	L_{PCPG}= \sum_{t=1}^{T}L_{t}^{'}=\sum_{t=1}^{T}\dfrac{1}{5}\sum_{i=t-2}^{t+2}L_{i}, \eqno{(12)}
+	$$
+	$$
+	\frac{\partial L_{PCPG}}{\partial \theta}=
+	\sum_{t=1}^{T}\frac{\partial L_{PCPG}}{\partial L_{t}^{'}}\frac{\partial L_{t}^{'}}{\partial \theta}
+	=\dfrac{1}{5}\sum_{t=1}^{T}\frac{\partial L_{PCPG}}{\partial L_{t}^{'}}\sum_{i=t-2}^{t+2}\frac{\partial L_{t}^{'}}{\partial L_{i}} \frac{\partial L_{i}}{\partial \theta},  \eqno{(13)}
+	$$
+	$$
+	\nabla_{\theta}L_{PCPG}^{t}=\dfrac{1}{5}\frac{\partial L_{PCPG}}{\partial L_{t}^{'}}\sum_{i=t-2}^{t+2}\frac{\partial L_{t}^{'}}{\partial L_{i}} \frac{\partial L_{i}}{\partial \theta},  \eqno{(14)}
+	$$
+	$$
+	\nabla_{\theta}L_{PCPG}^{t+1}=\dfrac{1}{5}\frac{\partial L_{PCPG}}{\partial L_{t+1}^{'}} \sum_{i=t-1}^{t+3}\frac{\partial L_{t}^{'}}{\partial L_{i}} \frac{\partial L_{i}}{\partial \theta}. \eqno{(15)}
+	$$
+	
+	According to Eq.14, we can find that the $\nabla_{\theta}L_{PGPC}^{t}$ has bigger optimized receptive field than the usual REINFORCE algorithm at time-step $t$. Combining with Eq.10, we can know that the $\nabla_{\theta}L_{PGPC}^{t}$ depends on the rewards at multiple times. In this way, there will be a stronger timing dependency between the output characters. And it also will guide the model to learn a parameter distribution which can make the model get a bigger regional comprehensive reward at each time step. So the PCPG can make the model have a better generalization ability for lip-reading.
+	
+	Moreover, we know it is usually unstable for the models to train with RL. There will be a big gradient change due to the randomness when making a decision in RL. According to the Eq.10 and Eq.14, we can find that the updated value of the gradient at each time step will be constrained by the reward value at multiple times. So the PCPG can restrain the instability in training process. The kernel weight $w=[w_{1}, w_{2}, \dots, w_{k}]$ can also ensure the value of the gradient in PCPG at a same quantitative level with the REINFORCE method by the following equation:
+	\vspace{-0.3cm}
+	$$
+	\sum_{i=1}^{k}w_{i}=1. \eqno {(16)}
+	$$
+	
+	By comparing Eq.14 and Eq.15, we can know that the local gradients at the adjacent time steps have many overlapping parts. In this way, the model can adjust the local gradient for many times at time step $t$ to get a bigger overall reward. And due to the existence of the overlapping parts, the local gradient at adjacent time step will not change dramatically. So the PCPG can not only improve efficiency but also make more stable when training.
+	
+	In the above example, there are two extreme cases:
+	(1) when $s$=5, there is no overlapping parts in this case. (2) when $k$=1, $s$=1, this is the usual REINFORCE method. So the usual REINFORCE algorithm is a special PCPG case.
+	\vspace{-0.5cm}
+	\section{Experiments}  \label{section4}
+	\vspace{-0.3cm}
+	In this section, the experiments on both the word-level and sentence-level datasets show a clear demonstration of the advantages of the proposed PCPG for lip-reading. At the same time, we also discuss the effects of convolution kernel hyperparameters on PCPG through experiments. In our experiments, the model converges difficultly if only use the $L_{PCPG}$ to optimize. In our experiments, we set $L_{CE}$ as the baseline. To ensure the training process's stability and a good optimization direction, we give the model a pre-training model trained by the CE loss and use $L_{combine}$ that combines the cross-entropy loss $L_{CE}$ with the reward loss $L_{PCPG}$ to continue training the model. The $L_{combine}$ is defined as follows:
+	
+	$$L_{combine}=(1-\lambda)*L_{CE} + \lambda*L_{PCPG}, \eqno{(17)}$$
+	where the $\lambda$ is to balance the two loss functions.
+	\noindent{}And we also  explore the effectiveness of PCPG for classifying based on word-level by the following $L_{combine}^{'}$:
+	\vspace{-0.2cm}
+	$$L_{Classify}^{'}=\alpha*L_{CE}+\beta*L_{Classify}+(1-\alpha-\beta)*L_{PCPG} \eqno{(18)}$$ where the $\alpha$ and $\beta$ are weight factors.
+	
+	We use the $L_{CE}$ as the baseline. For PCPG, we consider the following three situations:
+	(1) $k$=1, $s$=1 which is the usual REINFORCE algorithm.
+	(2) $k$=5, $s$=5 which has no overlapping parts.
+	(3) $k$=5, $s$=1. 
+	
+	Here, we use CER and WER (lower is better) as our evaluation metrics. And we set the kernel's weight $w$ to [$\dfrac{1}{5}$,$\dfrac{1}{5}$,$\dfrac{1}{5}$,$\dfrac{1}{5}$,$\dfrac{1}{5}$].
+	
+	\subsection{Ablation study}
+	\vspace{-0.2cm}
+	We have our ablation study on three different-level datasets including GRID (the sentence-level dataset), LRW (the word-level dataset), LRW-1000 (the word-level dataset). The results trained with $L_{Classify}$ and $L_{Classify}^{'}$ are based on classification of word level. The others are based on character level decoding with seq2seq models. All of results are shown in Table \ref{table1}. 
+	
+	According to Table \ref{table1}, Figure \ref{figure5}, \ref{figure6} and \ref{figure7}, the model with RL but no \textbf{RF} and no \textbf{OP} ($k$=1, $s$=1) achieves better performance than the baseline. This shows that RL is effective for seq2seq lip-reading.
+	\begin{table}[H]
+		\vspace{-0.3cm}  %调整图片与上文的垂直距离
+		\setlength{\abovecaptionskip}{0.1cm}   %调整图片标题与图距离
+		\setlength{\belowcaptionskip}{0cm} 
+		\centering
+		\begin{tabular}{p{1.39cm}|c|c|ccr}    
+			\hline
+			\hline
+			Dataset & Method& Case& CER &  WER  & Accuracy\\
+			\hline
+			\multirow{4}{0.5cm}{GRID}&    $L_{CE} (baseline)$ & / &8.4$\%$ & 18.3$\%$ & 81.7$\%$ \\
+			~&    No \textbf{RF} and no \textbf{OP}&$k$=1, $s$=1& 7.6$\%$ & 16.6$\%$ & 83.4$\%$ \\
+			~&    With \textbf{RF} and no \textbf{OP}&$k$=5, $s$=5& 6.9$\%$ & 15.3$\%$ & 84.7$\%$ \\
+			~    &With \textbf{RF} and with \textbf{OP} &$k$=5, $s$=1& \textbf{5.9}$\%$ & \textbf{12.3}$\%$ & \textbf{87.7}$\%$ \\
+			~ & LipNet (CTC  )\cite{Assael2016}&/&6.4$\%$&11.4$\%$&88.6$\%$\\
+			\hline
+			\multirow{6}{0.5cm}{LRW}&$L_{CE} (baseline)$ & /&17.5$\%$ & 28.3$\%$ & 71.7$\%$ \\
+			~&No \textbf{RF} and no \textbf{OP}&$k$=1, $s$=1& 17.2$\%$ & 26.8$\%$ & 73.2$\%$\\
+			~&With \textbf{RF} and no \textbf{OP}&$k$=5, $s$=5& 17.0$\%$ & 26.5$\%$ & 73.5$\%$ \\
+			~&With \textbf{RF} and with \textbf{OP} &$k$=5, $s$=1& \textbf{16.6}$\%$ & \textbf{25.7}$\%$ & \textbf{74.3}$\%$\\
+			~&$L_{Classify}$&  / & /&21.5$\%$ & 78.5$\%$ \\
+			~&$L_{Classify}^{'}$ (With \textbf{RF} and with \textbf{OP})&  $k$=5, $s$=1 &/& \textbf{19.8}$\%$ & \textbf{80.2}$\%$ \\
+			\hline
+			\multirow{6}{2cm}{LRW-1000}&$L_{CE} (baseline)$             &/  & 52.1$\%$ & 68.2$\%$ &    31.8$\%$  \\
+			~&No \textbf{RF} and no \textbf{OP} &$k$=1, $s$=1& 51.4$\%$ & 67.7$\%$ &    32.3$\%$ \\
+			~&With \textbf{RF} and no \textbf{OP} & $k$=5, $s$=5& 51.6$\%$   &   67.2$\%$   &  32.8$\%$       \\
+			~&With \textbf{RF} and with \textbf{OP} &$k$=5, $s$=1& \textbf{51.3}$\%$ & \textbf{66.9}$\%$ &    \textbf{33.1}$\%$      \\
+			~&$L_{Classify}$&  / &/& 61.5$\%$ & 38.5$\%$  \\
+			~&$L_{Classify}^{'}$ (With \textbf{RF} and with \textbf{OP})&  $k$=5, $s$=1&/ & \textbf{61.3}$\%$ &\textbf{38.7}$\%$ \\
+			~&Classify\cite{Yang2019}&/&/&61.81$\%$&38.19$\%$\\
+			\hline
+			\hline
+		\end{tabular}
+		\caption{The experimental results on GRID. Accuracy=1-WER. (\textbf{RF}: receptive field, \textbf{OP}: overlapping parts) 
+			\vspace{-0.2cm}} \label{table1}
+	\end{table}
+	\vspace{-0.7cm}
+	\begin{figure}[htbp]
+		%\vspace{-0.2cm}  %调整图片与上文的垂直距离
+		\setlength{\abovecaptionskip}{-0.0cm}   %调整图片标题与图距离
+		\setlength{\belowcaptionskip}{-0.8cm} 
+		\centering
+		%\subfigure{
+		\begin{minipage}[t]{0.320\textwidth}
+			
+			\centering
+			\includegraphics[width=4.45cm]{images/acc-epoch-grid.png}
+			\captionsetup{font={footnotesize}}
+			\caption{Acc-epoch on GRID.} \label{figure5}
+		\end{minipage}
+		%\subfigure{
+		\begin{minipage}[t]{0.320\textwidth}
+			\centering
+			\includegraphics[width=4.45cm]{images/acc-epoch-lrw1.png}
+			\captionsetup{font={footnotesize}}
+			\caption{Acc-epoch on LRW.} \label{figure6}
+		\end{minipage}
+		%\subfigure{
+		\begin{minipage}[t]{0.320\textwidth}
+			\centering
+			\includegraphics[width=4.45cm]{images/acc-epoch-lrw10001.png}
+			\captionsetup{font={footnotesize}}
+			\caption{Acc-epoch on LRW-1000.} \label{figure7}
+		\end{minipage}
+	\end{figure}
+	\begin{figure}[H]
+		\vspace{-0.55cm}  %调整图片与上文的垂直距离
+		\setlength{\abovecaptionskip}{-0.0cm}   %调整图片标题与图距离
+		\setlength{\belowcaptionskip}{-0.4cm} 
+		\centering
+		%\subfigure{
+		\begin{minipage}[t]{0.320\textwidth}
+			
+			\centering
+			\includegraphics[width=4.45cm]{images/loss-iteration-grid.png}
+			\captionsetup{font={footnotesize}}
+			\caption{$L_{PCPG}$-iteration on GRID.} \label{figure8}
+		\end{minipage}
+		%\subfigure{
+		\begin{minipage}[t]{0.320\textwidth}
+			\centering
+			\includegraphics[width=4.45cm]{images/loss-iteration-lrw1.png}
+			\captionsetup{font={footnotesize}}
+			\caption{$L_{PCPG}$-iteration on LRW.} \label{figure9}
+		\end{minipage}
+		%\subfigure{
+			\begin{minipage}[t]{0.320\textwidth}
+				\centering
+				\includegraphics[width=4.45cm]{images/loss-iteration-lrw1000.png}
+				\captionsetup{font={footnotesize}}
+				\caption{$L_{PCPG}$-iteration on LRW-1000.} \label{figure10}
+		\end{minipage}
+	\end{figure}
+The model with \textbf{RF} and \textbf{OP} ($k=5$, $s$=1) achieves the best performance on all datasets. We can know that the proposed PCPG is more competitive than others for lip-reading. And according to Figure \ref{figure8}, \ref{figure9} and \ref{figure10}, the PCPG can make the models more stable and take less time to converge than others during the training process. 
+	\vspace{-0.4cm} 
+	\subsection{Evaluation of the kernel size $k$ in PCPG} \label{section4.2}
+	\vspace{-0.20cm}
+	In order to explore the impact of the kernel size $k$ on the PCPG's performance, we experiment on GRID. Here, we keep $s$ at 1 to make the model have more overlapping parts to be more stable when training. To make the convolutional kernel have the same attention to the reward value at each time step, the kernel weight $w$ is set to  [$\dfrac{1}{k}$,$\dfrac{1}{k}$,\dots,$\dfrac{1}{k}$]. The results are shown in Table \ref{table2}.
+	\begin{table}[H]
+		\vspace{-0.3cm}  %调整图片与上文的垂直距离
+		\setlength{\abovecaptionskip}{-0.0cm}   %调整图片标题与图距离
+		\setlength{\belowcaptionskip}{-0.4cm} 
+		\centering
+		\begin{tabular}{lr}    
+			\hline
+			\hline
+			Kernel size\centering      &     WER   \\
+			\hline
+			$k$=1& 16.6$\%$\\
+			$k$=2 &16.0$\%$ \\
+			$k$=3&\textbf{12.1}$\%$ \\
+			$k$=5 & 12.3$\%$ \\  
+			$k$=7&14.8$\%$ \\
+			\hline
+			\hline
+		\end{tabular}
+		\caption{The experimental results when model has different $k$. ($s$=1)} \label{table2}
+		
+	\end{table}
+	As is shown in Table \ref{table2}, we get the best result when $k$=3 on GRID. If $k$ is too small (such as $k$=1, 2) or too big (such as $k$=5, 7), the PCPG can't perform best. So we need to choose a proper receptive field according to our data. 
+	\vspace{-0.4cm}
+	\subsection{Evaluation of the kernel weight $w$ in PCPG}
+	\vspace{-0.2cm}
+	Here, we also have some experiments to explore the impact of the kernel weight $w$ on the PCPG's performance based on GRID. According to Section \ref{section4.2}, we know the PCPG can performs best when $k$=3. So we set $k$ to 3 and $s$ to 1, here. The results are shown in Table \ref{table3}.
+	\begin{table}[H]
+		\centering
+		\vspace{-0.4cm}  %调整图片与上文的垂直距离
+		\setlength{\abovecaptionskip}{-0.00cm}   %调整图片标题与图距离
+		\setlength{\belowcaptionskip}{-0.4cm}
+		\begin{tabular}{lccr}    
+			\hline
+			\hline
+			Kernel weight&     WER   \\
+			\hline
+			$w$=[1/3,1/3,1/3]& 12.1$\%$\\
+			$w$=[1/4,1/2,1/4]&\textbf{11.9$\%$} \\
+			$w$=[1/3,1/2,1/6]&12.7$\%$ \\
+			$w$=[1/6,1/2,1/3]&12.6$\%$ \\  
+			\hline
+			\hline
+		\end{tabular}
+		\caption{The experiments'results when model has different $w$. ($k$=3, $s$=1)} \label{table3}
+	\end{table}
+	As is shown in Table \ref{table3}, when $w$=[1/4,1/2,1/4], the PCPG can perform best on GRID. It is important to balance the rewards of the current moment and the rewards of the moments before and after in PCPG. A proper weight $w$ can improve the performance of the PCPG.
+	\vspace{-0.5cm}
+	\section{Conclusions}
+	\vspace{-0.4cm}
+	In this work, we introduce RL (reinforcement learning) into seq2seq lip-reading based on character level. And we put forward the PCPG (Pseudo-Convolutional Policy Gradient) to optimize the model. We verify the PCPG is effective for lip-reading by the experiments on three different-level datasets (GRID, LRW, LRW-1000). And the model can perform more stable and robust when using PCPG with proper convolutional kernel hyperparameters than the usual REINFORCE algorithm. Our method can also improve the performance of classifier to a certain degree. Specially, we believe that the PCPG can also be applied to other seq2seq tasks, such as machine translation, automatic speech recognition, image caption, video caption and so on.
+	\bibliographystyle{bmvc}
+	\bibliography{egbib}
+\end{document}
